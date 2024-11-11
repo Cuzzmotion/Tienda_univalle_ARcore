@@ -28,6 +28,13 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.boutique.ApiAuth.RetrofitInstanceAuth
+import com.example.boutique.ApiProd.Product
+import com.example.boutique.ApiProd.ProductRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,6 +60,7 @@ fun LoginScreen(navController: NavController) {
     var usuario by remember { mutableStateOf("") }
     var contraseña by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -72,7 +80,7 @@ fun LoginScreen(navController: NavController) {
             label = { Text("Usuario") },
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
+                keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
             )
         )
@@ -91,7 +99,6 @@ fun LoginScreen(navController: NavController) {
             )
         )
 
-        // Muestra el mensaje de error si los campos no son válidos
         if (errorMessage.isNotEmpty()) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -105,23 +112,39 @@ fun LoginScreen(navController: NavController) {
 
         Button(
             onClick = {
-                if (usuario == "nji2025954@est.univalle.edu" ||usuario == "Nji2025954@est.univalle.edu" && contraseña == "PQRsst903") {
-                    navController.navigate("home")
-                } else {
-                    errorMessage = "Usuario o contraseña incorrectos"
+                CoroutineScope(Dispatchers.IO).launch {
+                    val response = RetrofitInstanceAuth.api.getPersonalData()
+                    if (response.isSuccessful) {
+                        val personalDataList = response.body() ?: emptyList()
+                        val user = personalDataList.find {
+                            it.name == usuario && it.password == contraseña
+                        }
+                        if (user != null) {
+                            withContext(Dispatchers.Main) {
+                                navController.navigate("home")
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                errorMessage = "Usuario o contraseña incorrectos"
+                            }
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            errorMessage = "Error en la conexión"
+                        }
+                    }
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)) // Color verde
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
         ) {
             Text("Ingresar")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botón de ingresar sin cuenta
         TextButton(
             onClick = { navController.navigate("home") },
             modifier = Modifier.fillMaxWidth()
@@ -137,14 +160,13 @@ fun HomeScreen(navController: NavController) {
     var selectedOption by remember { mutableStateOf("Popular") }
     var isSearching by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
+    var productos by remember { mutableStateOf<List<Product>>(emptyList()) }
 
-    // Lista de productos con sus nombres e imágenes
-    val productos = listOf(
-        "Buzo" to R.drawable.buzo,
-        "Cafe" to R.drawable.cafe,
-        "Chaqueta" to R.drawable.chaqueta,
-        "Canguro" to R.drawable.canguro
-    )
+    // Llamar a la API para obtener los productos
+    LaunchedEffect(Unit) {
+        val repository = ProductRepository()
+        productos = repository.fetchProducts()
+    }
 
     // Conjuntos de imágenes para cada opción
     val popularImages = listOf(R.drawable.buzo, R.drawable.cafe)
@@ -161,7 +183,7 @@ fun HomeScreen(navController: NavController) {
 
     // Filtrar productos según el término de búsqueda
     val filteredProducts = if (isSearching && searchText.isNotEmpty()) {
-        productos.filter { it.first.contains(searchText, ignoreCase = true) }
+        productos.filter { it.name.contains(searchText, ignoreCase = true) }
     } else {
         productos
     }
@@ -264,15 +286,11 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                filteredProducts.forEach { (_, imageRes) ->
-                    Image(
-                        painter = painterResource(id = imageRes),
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(150.dp)
-                            .padding(4.dp)
-                            .background(Color.LightGray, MaterialTheme.shapes.small)
-                    )
+                filteredProducts.forEach { product ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(product.name, style = MaterialTheme.typography.bodyMedium)
+                        Text(product.unitPrice, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
         } else {
@@ -314,12 +332,7 @@ fun HomeScreen(navController: NavController) {
 
         // Lista de productos recomendados con navegación a ProductDetailScreen
         Column {
-            val productosRecomendados = listOf(
-                Pair("Nombre Producto 1", R.drawable.chaqueta),
-                Pair("Nombre Producto 2", R.drawable.canguro)
-            )
-
-            productosRecomendados.forEach { producto ->
+            productos.forEach { product ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -327,18 +340,18 @@ fun HomeScreen(navController: NavController) {
                         .background(Color(0xFFF5F5F5), MaterialTheme.shapes.small)
                         .padding(8.dp)
                         .clickable {
-                            navController.navigate("productDetail/${producto.first}")
+                            navController.navigate("productDetail/${product.idproducts}")
                         },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text(producto.first, style = MaterialTheme.typography.bodyLarge)
-                        Text("Categoría", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(product.name, style = MaterialTheme.typography.bodyLarge)
+                        Text(product.unitPrice, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                     Image(
-                        painter = painterResource(id = producto.second),
-                        contentDescription = producto.first,
+                        painter = painterResource(id = R.drawable.buzo),  // Aquí se puede ajustar para mostrar una imagen real del producto si se tiene una URL de imagen
+                        contentDescription = product.name,
                         modifier = Modifier
                             .size(80.dp)
                             .padding(4.dp)
@@ -349,6 +362,7 @@ fun HomeScreen(navController: NavController) {
         }
     }
 }
+
 
 @Composable
 fun ProductDetailScreen(navController: NavController, productName: String?) {

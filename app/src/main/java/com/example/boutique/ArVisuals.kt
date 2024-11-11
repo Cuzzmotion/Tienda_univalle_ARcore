@@ -64,8 +64,11 @@ class ArVisuals : ComponentActivity() {
 fun Menu(modifier: Modifier, onClick: (String) -> Unit) {
     var currentIndex by remember { mutableStateOf(0) }
     val itemsList = listOf(
-        Food("sports_bag", R.drawable.bolso),
-        Food("mochila", R.drawable.rojomochila),
+        Food("bolsaArreglada_1111011409", R.drawable.bolsouvalle),
+        Food("JacketUvallefinal_1111032647", R.drawable.chaquetatrans),
+        Food("chaquetaAzulArreglada_1111032527", R.drawable.chaquetauvalle),
+        Food("neonpolera_1111032710", R.drawable.polerafosfo),
+        Food("Polo_Shirt_with_Unive_1111032633", R.drawable.polirauvalle),
     )
     fun updateIndex(offset: Int) {
         currentIndex = (currentIndex + offset + itemsList.size) % itemsList.size
