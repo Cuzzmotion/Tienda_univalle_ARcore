@@ -16,4 +16,26 @@ class ProductRepository {
             }
         }
     }
+
+    suspend fun fetchAll(): List<Product> {
+        return withContext(Dispatchers.IO) {
+            val response = RetrofitInstanceProdJwt.api.findAll();
+            if (response.isSuccessful) {
+                response.body() ?: emptyList()
+            } else {
+                emptyList()
+            }
+        }
+    }
+
+    suspend fun getProductWithImg(id : Int): ProductWithImg? {
+        return withContext(Dispatchers.IO) {
+            val response = RetrofitInstanceProdJwt.api.getProductWithImg(id);
+            if (response.isSuccessful) {
+                response.body()
+            } else {
+                null
+            }
+        }
+    }
 }

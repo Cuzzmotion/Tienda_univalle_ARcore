@@ -1,6 +1,9 @@
 package com.example.boutique
 
+
+import TokenManager
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +12,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,18 +28,31 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.boutique.ApiAuth.LoginRequest
 import com.example.boutique.ApiAuth.RetrofitInstanceAuth
+import com.example.boutique.ApiAuth.RetrofitInstanceAuthJwt
+import com.example.boutique.ApiAuth.Token
 import com.example.boutique.ApiProd.Product
+import com.example.boutique.ApiProd.ProductApiService
 import com.example.boutique.ApiProd.ProductRepository
+import com.example.boutique.ApiProd.ProductWithImg
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import decodeBase64Image
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.Response
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,7 +65,10 @@ class MainActivity : ComponentActivity() {
                     composable("home") { HomeScreen(navController) }
                     composable("productDetail/{productName}") { backStackEntry ->
                         val productName = backStackEntry.arguments?.getString("productName")
-                        ProductDetailScreen(navController = navController, productName = productName)
+
+                        val product = productName?.toInt()
+
+                        ProductDetailScreen(navController = navController, productName = product)
                     }
                 }
             }
@@ -113,26 +134,26 @@ fun LoginScreen(navController: NavController) {
         Button(
             onClick = {
                 CoroutineScope(Dispatchers.IO).launch {
-                    val response = RetrofitInstanceAuth.api.getPersonalData()
-                    if (response.isSuccessful) {
-                        val personalDataList = response.body() ?: emptyList()
-                        val user = personalDataList.find {
-                            it.name == usuario && it.password == contraseña
-                        }
-                        if (user != null) {
+                    val loginRequest = LoginRequest(usuario, contraseña)
+                    try {
+                        val responsejwt = RetrofitInstanceAuthJwt.api.login(loginRequest);
+                        println(responsejwt);
+                        TokenManager.jwtToken = responsejwt.body()?.access_token
+                        println("hola");
+                        if (responsejwt.isSuccessful) {
                             withContext(Dispatchers.Main) {
                                 navController.navigate("home")
                             }
                         } else {
                             withContext(Dispatchers.Main) {
-                                errorMessage = "Usuario o contraseña incorrectos"
+                                errorMessage = "Credenciales Incorrectas"
                             }
                         }
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            errorMessage = "Error en la conexión"
-                        }
+                    } catch(e: Exception){
+                        println(e.message);
+                        println("Murio");
                     }
+
                 }
             },
             modifier = Modifier
@@ -161,11 +182,13 @@ fun HomeScreen(navController: NavController) {
     var isSearching by remember { mutableStateOf(false) }
     var searchText by remember { mutableStateOf("") }
     var productos by remember { mutableStateOf<List<Product>>(emptyList()) }
+    var products by remember { mutableStateOf<List<Product>>(emptyList()) }
 
     // Llamar a la API para obtener los productos
     LaunchedEffect(Unit) {
         val repository = ProductRepository()
-        productos = repository.fetchProducts()
+        productos = repository.fetchAll()
+        println(productos)
     }
 
     // Conjuntos de imágenes para cada opción
@@ -331,43 +354,83 @@ fun HomeScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Lista de productos recomendados con navegación a ProductDetailScreen
-        Column {
-            productos.forEach { product ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                        .background(Color(0xFFF5F5F5), MaterialTheme.shapes.small)
-                        .padding(8.dp)
-                        .clickable {
-                            navController.navigate("productDetail/${product.idproducts}")
-                        },
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(product.name, style = MaterialTheme.typography.bodyLarge)
-                        Text(product.unitPrice, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp)
+        ) {
+                // Si hay productos, muestra la lista
+                items(productos) { product ->
+                    val repository = ProductRepository()
+                    val decodedImage = remember { mutableStateOf<Bitmap?>(null) }
+
+                    product.idproducts
+                    LaunchedEffect(product.idproducts) {
+                        val result = repository.getProductWithImg(product.idproducts)
+                        if (result != null) {
+                            decodedImage.value = decodeBase64Image(result.image)
+                        }
                     }
-                    Image(
-                        painter = painterResource(id = R.drawable.buzo),  // Aquí se puede ajustar para mostrar una imagen real del producto si se tiene una URL de imagen
-                        contentDescription = product.name,
+
+                    Row(
                         modifier = Modifier
-                            .size(80.dp)
-                            .padding(4.dp)
-                            .background(Color.White, MaterialTheme.shapes.small)
-                    )
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(Color(0xFFF5F5F5), MaterialTheme.shapes.small)
+                            .padding(8.dp)
+                            .clickable {
+                                navController.navigate("productDetail/${product.idproducts}")
+                            },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(product.name, style = MaterialTheme.typography.bodyLarge)
+                            Text(product.unitPrice, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
+                        decodedImage.value?.let { bitmap ->
+                            Image(
+                                painter = remember { BitmapPainter(bitmap.asImageBitmap()) }, // Convertir el Bitmap a ImageBitmap
+                                contentDescription = product.name,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .padding(4.dp)
+                                    .background(Color.White, MaterialTheme.shapes.small)
+                            )
+                        } ?: run {
+                            // Si no se ha decodificado la imagen, muestra una imagen por defecto
+                            Image(
+                                painter = painterResource(id = R.drawable.buzo),
+                                contentDescription = product.name,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .padding(4.dp)
+                                    .background(Color.White, MaterialTheme.shapes.small)
+                            )
+                        }
+                    }
                 }
-            }
+
         }
     }
 }
 
 
 @Composable
-fun ProductDetailScreen(navController: NavController, productName: String?) {
-    // Estado para la talla seleccionada
+fun ProductDetailScreen(navController: NavController, productName: Int?) {
+    // Estado para los datos del producto
+    var productWithImg by remember { mutableStateOf<ProductWithImg?>(null) }
     var selectedSize by remember { mutableStateOf("S") }
+    val decodedImage = remember { mutableStateOf<Bitmap?>(null) }
+
+    // Se realiza la carga de datos en LaunchedEffect
+    LaunchedEffect(productName) {
+        productName?.let {
+            val result = ProductRepository().getProductWithImg(it)
+            productWithImg = result
+            decodedImage.value = result?.image?.let { it1 -> decodeBase64Image(it1) }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -395,18 +458,31 @@ fun ProductDetailScreen(navController: NavController, productName: String?) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Imagen del producto
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .background(Color.LightGray, MaterialTheme.shapes.small)
-        )
+        decodedImage.value?.let { bitmap ->
+            Image(
+                painter = remember { BitmapPainter(bitmap.asImageBitmap()) },
+                contentDescription = productWithImg?.product?.name,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .background(Color.White, MaterialTheme.shapes.small)
+            )
+        } ?: run {
+            Image(
+                painter = painterResource(id = R.drawable.buzo),
+                contentDescription = productWithImg?.product?.name,
+                modifier = Modifier
+                    .size(80.dp)
+                    .padding(4.dp)
+                    .background(Color.White, MaterialTheme.shapes.small)
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         // Nombre del producto y categoría
-        Text(text = productName ?: "Nombre del Producto", style = MaterialTheme.typography.bodyLarge)
-        Text("Categoría", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text(text = productWithImg?.product?.name ?: "Nombre del Producto", style = MaterialTheme.typography.bodyLarge)
+        Text(text = "Categoría", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -447,7 +523,7 @@ fun ProductDetailScreen(navController: NavController, productName: String?) {
         // Precio
         Text(text = "Precio", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = "Bs. 000", style = MaterialTheme.typography.headlineMedium)
+        Text(text = ("Bs." + productWithImg?.product?.unitPrice), style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -470,6 +546,7 @@ fun ProductDetailScreen(navController: NavController, productName: String?) {
     }
 }
 
+
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
@@ -490,7 +567,7 @@ fun HomeScreenPreview() {
 @Composable
 fun ProductDetailScreenPreview() {
     MaterialTheme {
-        ProductDetailScreen(navController = rememberNavController(), productName = "Nombre Producto de Ejemplo")
+        ProductDetailScreen(navController = rememberNavController(), productName = 12)
     }
 }
 

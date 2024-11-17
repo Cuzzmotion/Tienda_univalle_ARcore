@@ -7,3 +7,8 @@ data class Product(
     val unitPrice: String,
     val is_deleted: Int
 )
+
+data class ProductWithImg(
+    val product: Product,
+    val image: String
+)
