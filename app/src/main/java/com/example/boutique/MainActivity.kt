@@ -90,6 +90,11 @@ fun LoginScreen(navController: NavController) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "LogoUnivalle",
+            modifier = Modifier.fillMaxWidth()
+        )
         Text(text = "Univalle Boutique", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = "Inicia Sesión", style = MaterialTheme.typography.titleMedium)
@@ -159,7 +164,7 @@ fun LoginScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(183, 21, 54, 255))
         ) {
             Text("Ingresar")
         }
@@ -170,7 +175,7 @@ fun LoginScreen(navController: NavController) {
             onClick = { navController.navigate("home") },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Ingresar sin cuenta", color = Color(0xFF4CAF50))
+            Text("Ingresar sin cuenta", color = Color(183, 21, 54, 255))
         }
     }
 }
@@ -249,10 +254,32 @@ fun HomeScreen(navController: NavController) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
-        // Imágenes encima de los botones de opciones
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            listOf("Popular", "Nuevo", "Recomendado").forEach { option ->
+                Button(
+                    onClick = { selectedOption = option },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selectedOption == option) Color(183, 21, 54, 255) else Color.Transparent,
+                        contentColor = if (selectedOption == option) Color.White else Color(183, 21, 54, 255)
+                    ),
+                    border = BorderStroke(1.dp, Color(183, 21, 54, 255)),
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 100.dp)
+                        .height(40.dp)
+                        .padding(horizontal = 4.dp)
+                ) {
+                    Text(option)
+                }
+            }
+        }
+        // Imágenes debajo de los botones de opciones
+        Row(
+            modifier = Modifier.fillMaxWidth()
+                .padding(top = 10.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Image(
@@ -275,28 +302,7 @@ fun HomeScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(8.dp))
 
         // Opciones seleccionables ("Popular", "Nuevo", "Recomendado") centradas y estilizadas
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            listOf("Popular", "Nuevo", "Recomendado").forEach { option ->
-                Button(
-                    onClick = { selectedOption = option },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selectedOption == option) Color(0xFF2D2926) else Color.Transparent,
-                        contentColor = if (selectedOption == option) Color.White else Color(0xFF8D6E63)
-                    ),
-                    border = BorderStroke(1.dp, Color(0xFF8D6E63)),
-                    shape = MaterialTheme.shapes.small,
-                    modifier = Modifier
-                        .defaultMinSize(minWidth = 100.dp)
-                        .height(40.dp)
-                        .padding(horizontal = 4.dp)
-                ) {
-                    Text(option)
-                }
-            }
-        }
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -347,7 +353,7 @@ fun HomeScreen(navController: NavController) {
         ) {
             Text(text = "Recomendado", style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = { /* Acción para Ver todo */ }) {
-                Text("Ver todo", color = Color(0xFF8D6E63), style = MaterialTheme.typography.bodySmall)
+                Text("Ver todo", color = Color(183, 21, 54, 255), style = MaterialTheme.typography.bodySmall)
             }
         }
 
