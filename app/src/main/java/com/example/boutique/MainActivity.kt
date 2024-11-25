@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.testTag
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
@@ -44,14 +44,13 @@ import com.example.boutique.ApiProd.Product
 import com.example.boutique.ApiProd.ProductApiService
 import com.example.boutique.ApiProd.ProductRepository
 import com.example.boutique.ApiProd.ProductWithImg
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import decodeBase64Image
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Response
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 
 
 class MainActivity : ComponentActivity() {
@@ -93,7 +92,10 @@ fun LoginScreen(navController: NavController) {
         Image(
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "LogoUnivalle",
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().testTag("LoginButton").semantics {
+                contentDescription = "Logo de Univalle"
+            }
+
         )
         Text(text = "Univalle Boutique", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(8.dp))
@@ -104,7 +106,9 @@ fun LoginScreen(navController: NavController) {
             value = usuario,
             onValueChange = { usuario = it },
             label = { Text("Usuario") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("inputUser").semantics {
+                contentDescription = "Input para el nombre de usuario"
+            },
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
@@ -117,7 +121,9 @@ fun LoginScreen(navController: NavController) {
             value = contraseña,
             onValueChange = { contraseña = it },
             label = { Text("Contraseña") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("inputPassword").semantics {
+                contentDescription = "Input para la contraseña"
+            },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
@@ -126,7 +132,9 @@ fun LoginScreen(navController: NavController) {
         )
 
         if (errorMessage.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp).testTag("messageError").semantics {
+                contentDescription = "Espacio para mostrar mensaje de error"
+            })
             Text(
                 text = errorMessage,
                 color = Color.Red,
@@ -163,7 +171,9 @@ fun LoginScreen(navController: NavController) {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .height(48.dp).testTag("btnSubmit").semantics {
+                    contentDescription = "Boton de ingreso"
+                },
             colors = ButtonDefaults.buttonColors(containerColor = Color(183, 21, 54, 255))
         ) {
             Text("Ingresar")
@@ -173,7 +183,9 @@ fun LoginScreen(navController: NavController) {
 
         TextButton(
             onClick = { navController.navigate("home") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth().testTag("btnSubmitWithoutUser").semantics {
+                contentDescription = "Boton ingresar sin cuenta"
+            }
         ) {
             Text("Ingresar sin cuenta", color = Color(183, 21, 54, 255))
         }
@@ -270,7 +282,9 @@ fun HomeScreen(navController: NavController) {
                     modifier = Modifier
                         .defaultMinSize(minWidth = 100.dp)
                         .height(40.dp)
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 4.dp).testTag("buttonsNevigation").semantics {
+                            contentDescription = "Botones de navegacion"
+                        }
                 ) {
                     Text(option)
                 }
@@ -279,7 +293,9 @@ fun HomeScreen(navController: NavController) {
         // Imágenes debajo de los botones de opciones
         Row(
             modifier = Modifier.fillMaxWidth()
-                .padding(top = 10.dp),
+                .padding(top = 10.dp).testTag("imgOptions").semantics {
+                    contentDescription = "Imagenes de muestra"
+                },
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Image(
@@ -352,7 +368,9 @@ fun HomeScreen(navController: NavController) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(text = "Recomendado", style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { /* Acción para Ver todo */ }) {
+            TextButton(onClick = { /* Acción para Ver todo */ },modifier = Modifier.testTag("btnShowAll").semantics {
+                contentDescription = "Boton para mostrar todos los items"
+            }) {
                 Text("Ver todo", color = Color(183, 21, 54, 255), style = MaterialTheme.typography.bodySmall)
             }
         }
