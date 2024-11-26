@@ -29,6 +29,8 @@ import dev.romainguy.kotlin.math.Float3
 class ArVisuals : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val selectedModel = intent.getStringExtra("selectedModel") ?: "sports_bag"
         setContent {
             BoutiqueTheme {
                 Surface(
@@ -36,9 +38,10 @@ class ArVisuals : ComponentActivity() {
                     color = MaterialTheme.colors.background
                 ) {
                     Box(modifier = Modifier.fillMaxSize()) {
-                        val currentModel = remember { mutableStateOf("sports_bag") }
+                        val currentModel = remember { mutableStateOf(selectedModel) }
+                        println("Current: "+currentModel.value)
                         ARScreen(model = currentModel.value) {
-                            finish()  // Finaliza este Activity y vuelve al anterior
+                            finish()
                         }
                         Menu(
                             modifier = Modifier.align(Alignment.BottomCenter),

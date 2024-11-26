@@ -5,6 +5,7 @@ import TokenManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -51,6 +52,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import coil.util.DebugLogger
 
 
 class MainActivity : ComponentActivity() {
@@ -64,7 +66,6 @@ class MainActivity : ComponentActivity() {
                     composable("home") { HomeScreen(navController) }
                     composable("productDetail/{productName}") { backStackEntry ->
                         val productName = backStackEntry.arguments?.getString("productName")
-
                         val product = productName?.toInt()
 
                         ProductDetailScreen(navController = navController, productName = product)
@@ -216,13 +217,13 @@ fun HomeScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         val repository = ProductRepository()
         productos = repository.fetchAll()
-        println(productos)
+        println("Aqui: \n"+productos)
     }
 
     // Conjuntos de imágenes para cada opción
-    val popularImages = listOf(R.drawable.bolsouvalle, R.drawable.bolsouvalle)
-    val nuevoImages = listOf(R.drawable.chaquetauvalle, R.drawable.chaquetauvalle)
-    val recomendadoImages = listOf(R.drawable.chaquetatrans, R.drawable.chaquetatrans)
+    val popularImages = listOf(R.drawable.chaquetatrans, R.drawable.chaquetauvalle)
+    val nuevoImages = listOf(R.drawable.mochilapeqverde, R.drawable.mochilaazul)
+    val recomendadoImages = listOf(R.drawable.poloverde, R.drawable.polerafosfo)
 
 
     // Elegir imágenes según la opción seleccionada
@@ -302,30 +303,6 @@ fun HomeScreen(navController: NavController) {
                 }
             }
         }
-        // Imágenes debajo de los botones de opciones
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .padding(top = 10.dp).testTag("imgOptions").semantics {
-                    contentDescription = "Imagenes de muestra"
-                },
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.chaquetatrans),
-                contentDescription = "Imagen Popular",
-                modifier = Modifier.size(60.dp)
-            )
-            Image(
-                painter = painterResource(id = R.drawable.poloverde),
-                contentDescription = "Imagen Nuevo",
-                modifier = Modifier.size(60.dp)
-            )
-            Image(
-                painter = painterResource(id = R.drawable.mochilaazul),
-                contentDescription = "Imagen Recomendado",
-                modifier = Modifier.size(60.dp)
-            )
-        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -380,9 +357,13 @@ fun HomeScreen(navController: NavController) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(text = "Recomendado", style = MaterialTheme.typography.titleMedium)
-            TextButton(onClick = { /* Acción para Ver todo */ },modifier = Modifier.testTag("btnShowAll").semantics {
+            TextButton(onClick = { /* Acción para Ver todo */ },
+                modifier = Modifier.
+                testTag("btnShowAll")
+                .semantics {
                 contentDescription = "Boton para mostrar todos los items"
-            }) {
+                }
+            ) {
                 Text("Ver todo", color = Color(183, 21, 54, 255), style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -497,14 +478,7 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
                     .background(Color.White, MaterialTheme.shapes.small)
             )
         } ?: run {
-            Image(
-                painter = painterResource(id = R.drawable.buzo),
-                contentDescription = productWithImg?.product?.name,
-                modifier = Modifier
-                    .size(80.dp)
-                    .padding(4.dp)
-                    .background(Color.White, MaterialTheme.shapes.small)
-            )
+            Text("Cargando imagen..")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -560,7 +534,14 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
         val context = LocalContext.current
         Button(
             onClick = {
+                var selectedModelName: String? = ""
+                when (productName) {
+                    13-> selectedModelName = "JacketUvallefinal_1111032647"
+                    14 -> selectedModelName = "bolsaArreglada_1111011409"
+                    else -> println("Modelo no encontrado")
+                }
                 val intent = Intent(context, ArVisuals::class.java)
+                intent.putExtra("selectedModel", selectedModelName)
                 context.startActivity(intent)
             },
             modifier = Modifier
