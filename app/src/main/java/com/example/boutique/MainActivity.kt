@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavController) {
     var usuario by remember { mutableStateOf("") }
@@ -112,6 +113,11 @@ fun LoginScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
+            ),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color(183, 21, 54, 255),
+                focusedLabelColor = Color.Black,
+                cursorColor = Color(98, 95, 95, 230)
             )
         )
 
@@ -128,6 +134,11 @@ fun LoginScreen(navController: NavController) {
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done
+            ),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color(183, 21, 54, 255),
+                focusedLabelColor = Color.Black,
+                cursorColor = Color(98, 95, 95, 230)
             )
         )
 
@@ -209,9 +220,10 @@ fun HomeScreen(navController: NavController) {
     }
 
     // Conjuntos de imágenes para cada opción
-    val popularImages = listOf(R.drawable.buzo, R.drawable.cafe)
-    val nuevoImages = listOf(R.drawable.chaqueta, R.drawable.canguro)
-    val recomendadoImages = listOf(R.drawable.canguro, R.drawable.buzo)
+    val popularImages = listOf(R.drawable.bolsouvalle, R.drawable.bolsouvalle)
+    val nuevoImages = listOf(R.drawable.chaquetauvalle, R.drawable.chaquetauvalle)
+    val recomendadoImages = listOf(R.drawable.chaquetatrans, R.drawable.chaquetatrans)
+
 
     // Elegir imágenes según la opción seleccionada
     val imagesToShow = when (selectedOption) {
@@ -299,17 +311,17 @@ fun HomeScreen(navController: NavController) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Image(
-                painter = painterResource(id = R.drawable.buzo),
+                painter = painterResource(id = R.drawable.chaquetatrans),
                 contentDescription = "Imagen Popular",
                 modifier = Modifier.size(60.dp)
             )
             Image(
-                painter = painterResource(id = R.drawable.cafe),
+                painter = painterResource(id = R.drawable.poloverde),
                 contentDescription = "Imagen Nuevo",
                 modifier = Modifier.size(60.dp)
             )
             Image(
-                painter = painterResource(id = R.drawable.chaqueta),
+                painter = painterResource(id = R.drawable.mochilaazul),
                 contentDescription = "Imagen Recomendado",
                 modifier = Modifier.size(60.dp)
             )
@@ -383,57 +395,50 @@ fun HomeScreen(navController: NavController) {
                 .fillMaxSize()
                 .padding(8.dp)
         ) {
-                // Si hay productos, muestra la lista
-                items(productos) { product ->
-                    val repository = ProductRepository()
-                    val decodedImage = remember { mutableStateOf<Bitmap?>(null) }
+            // Si hay productos, muestra la lista
+            items(productos) { product ->
+                val repository = ProductRepository()
+                val decodedImage = remember { mutableStateOf<Bitmap?>(null) }
 
-                    product.idproducts
-                    LaunchedEffect(product.idproducts) {
-                        val result = repository.getProductWithImg(product.idproducts)
-                        if (result != null) {
-                            decodedImage.value = decodeBase64Image(result.image)
-                        }
-                    }
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .background(Color(0xFFF5F5F5), MaterialTheme.shapes.small)
-                            .padding(8.dp)
-                            .clickable {
-                                navController.navigate("productDetail/${product.idproducts}")
-                            },
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(product.name, style = MaterialTheme.typography.bodyLarge)
-                            Text(product.unitPrice, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-                        }
-                        decodedImage.value?.let { bitmap ->
-                            Image(
-                                painter = remember { BitmapPainter(bitmap.asImageBitmap()) }, // Convertir el Bitmap a ImageBitmap
-                                contentDescription = product.name,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .padding(4.dp)
-                                    .background(Color.White, MaterialTheme.shapes.small)
-                            )
-                        } ?: run {
-                            // Si no se ha decodificado la imagen, muestra una imagen por defecto
-                            Image(
-                                painter = painterResource(id = R.drawable.buzo),
-                                contentDescription = product.name,
-                                modifier = Modifier
-                                    .size(80.dp)
-                                    .padding(4.dp)
-                                    .background(Color.White, MaterialTheme.shapes.small)
-                            )
-                        }
+                product.idproducts
+                LaunchedEffect(product.idproducts) {
+                    val result = repository.getProductWithImg(product.idproducts)
+                    if (result != null) {
+                        decodedImage.value = decodeBase64Image(result.image)
                     }
                 }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                        .background(Color(0xFFF5F5F5), MaterialTheme.shapes.small)
+                        .padding(8.dp)
+                        .clickable {
+                            navController.navigate("productDetail/${product.idproducts}")
+                        },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(product.name, style = MaterialTheme.typography.bodyLarge)
+                        Text(product.unitPrice, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    }
+                    decodedImage.value?.let { bitmap ->
+                        Image(
+                            painter = remember { BitmapPainter(bitmap.asImageBitmap()) }, // Convertir el Bitmap a ImageBitmap
+                            contentDescription = product.name,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .padding(4.dp)
+                                .background(Color.White, MaterialTheme.shapes.small)
+                        )
+                    } ?: run {
+                        // Si no se ha decodificado la imagen, muestra una imagen por defecto
+                        Text("Imagen...")
+                    }
+                }
+            }
 
         }
     }
@@ -594,6 +599,3 @@ fun ProductDetailScreenPreview() {
         ProductDetailScreen(navController = rememberNavController(), productName = 12)
     }
 }
-
-
-
