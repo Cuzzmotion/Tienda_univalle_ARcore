@@ -5,7 +5,6 @@ import TokenManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
@@ -38,11 +37,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.boutique.ApiAuth.LoginRequest
-import com.example.boutique.ApiAuth.RetrofitInstanceAuth
 import com.example.boutique.ApiAuth.RetrofitInstanceAuthJwt
-import com.example.boutique.ApiAuth.Token
 import com.example.boutique.ApiProd.Product
-import com.example.boutique.ApiProd.ProductApiService
 import com.example.boutique.ApiProd.ProductRepository
 import com.example.boutique.ApiProd.ProductWithImg
 import decodeBase64Image
@@ -52,7 +48,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
-import coil.util.DebugLogger
+import androidx.compose.ui.text.style.TextOverflow
 
 
 class MainActivity : ComponentActivity() {
@@ -205,6 +201,7 @@ fun LoginScreen(navController: NavController) {
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavController) {
     var selectedOption by remember { mutableStateOf("Popular") }
@@ -222,7 +219,7 @@ fun HomeScreen(navController: NavController) {
 
     // Conjuntos de imágenes para cada opción
     val popularImages = listOf(R.drawable.chaquetatrans, R.drawable.chaquetauvalle)
-    val nuevoImages = listOf(R.drawable.mochilapeqverde, R.drawable.mochilaazul)
+    val nuevoImages = listOf(R.drawable.mochilabandolera, R.drawable.mochilaazul)
     val recomendadoImages = listOf(R.drawable.poloverde, R.drawable.polerafosfo)
 
 
@@ -259,6 +256,10 @@ fun HomeScreen(navController: NavController) {
                     onValueChange = { searchText = it },
                     placeholder = { Text("Buscar...") },
                     modifier = Modifier.weight(1f),
+                    colors = TextFieldDefaults.textFieldColors(
+                        containerColor = Color.Transparent,
+                        focusedIndicatorColor = Color(183, 21, 54, 255)
+                    ),
                     singleLine = true,
                     trailingIcon = {
                         IconButton(onClick = {
@@ -316,17 +317,70 @@ fun HomeScreen(navController: NavController) {
             // Mostrar resultados de búsqueda
             Text("Resultados de búsqueda para \"$searchText\":", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
             ) {
-                filteredProducts.forEach { product ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(product.name, style = MaterialTheme.typography.bodyMedium)
-                        Text(product.unitPrice, style = MaterialTheme.typography.bodySmall)
+                // Si hay productos, muestra la lista
+                items(filteredProducts) { product ->
+                    val repository = ProductRepository()
+                    val decodedImage = remember { mutableStateOf<Bitmap?>(null) }
+                    // Lógica para obtener la imagen del producto
+                    LaunchedEffect(product.idproducts) {
+                        val result = repository.getProductWithImg(product.idproducts)
+                        if (result != null) {
+                            decodedImage.value = decodeBase64Image(result.image)
+                        }
+                    }
+                    // Fila de producto
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                            .background(Color(0xFFF5F5F5), MaterialTheme.shapes.small) // Fondo claro
+                            .padding(16.dp) // Espaciado interior
+                            .clickable {
+                                navController.navigate("productDetail/${product.idproducts}")
+                            },
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Información del producto
+                        Column(
+                            modifier = Modifier.weight(1f) // Para que la columna ocupe el espacio disponible
+                        ) {
+                            Text(
+                                text = product.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(modifier = Modifier.height(4.dp)) // Espacio entre los textos
+                            Text(
+                                text = product.unitPrice,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+
+                        // Imagen del producto (si está disponible)
+                        decodedImage.value?.let { bitmap ->
+                            Image(
+                                painter = remember { BitmapPainter(bitmap.asImageBitmap()) },
+                                contentDescription = product.name,
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .padding(4.dp)
+                                    .background(Color.White, MaterialTheme.shapes.small)
+                            )
+                        } ?: run {
+                            Text("Imagen...")
+                        }
                     }
                 }
             }
+
         } else {
             // Muestra las imágenes según la opción seleccionada
             Row(
@@ -460,9 +514,6 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = "Detalle del Producto", style = MaterialTheme.typography.headlineMedium)
             Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { /* Acción para mostrar más opciones */ }) {
-                Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Más opciones")
-            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -484,8 +535,8 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Nombre del producto y categoría
-        Text(text = productWithImg?.product?.name ?: "Nombre del Producto", style = MaterialTheme.typography.bodyLarge)
-        Text(text = "Categoría", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text(text = productWithImg?.product?.name ?: "Nombre del Producto", style = MaterialTheme.typography.titleLarge)
+        Text(text = "Prenda", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -497,10 +548,10 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
                 Button(
                     onClick = { selectedSize = size },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (selectedSize == size) Color(0xFF2D2926) else Color.Transparent,
-                        contentColor = if (selectedSize == size) Color.White else Color(0xFF8D6E63)
+                        containerColor = if (selectedSize == size) Color(183, 21, 54, 255) else Color.Transparent,
+                        contentColor = if (selectedSize == size) Color.White else Color(183, 21, 54, 255)
                     ),
-                    border = BorderStroke(1.dp, Color(0xFF8D6E63)),
+                    border = BorderStroke(1.dp, Color(183, 21, 54, 255)),
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .height(40.dp)
@@ -509,20 +560,7 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Descripción del producto
-        Text(text = "Acerca del producto", style = MaterialTheme.typography.bodyLarge)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "Detalles.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
+        Spacer(modifier = Modifier.height(30.dp))
         // Precio
         Text(text = "Precio", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(4.dp))
@@ -538,6 +576,12 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
                 when (productName) {
                     13-> selectedModelName = "JacketUvallefinal_1111032647"
                     14 -> selectedModelName = "bolsaArreglada_1111011409"
+                    36 -> selectedModelName = "chaquetaAzulArreglada_1111032527"
+                    37 -> selectedModelName = "MochilaU"
+                    38 -> selectedModelName = "Poloverde"
+                    39 -> selectedModelName = "Polo_Shirt_with_Unive_1111032633"
+                    40 -> selectedModelName = "neonpolera_1111032710"
+                    41 -> selectedModelName = "MochilanoseU"
                     else -> println("Modelo no encontrado")
                 }
                 val intent = Intent(context, ArVisuals::class.java)
@@ -547,7 +591,7 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
                 .padding(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8D6E63))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(183, 21, 54, 255))
         ) {
             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Visualizar")
             Spacer(modifier = Modifier.width(8.dp))

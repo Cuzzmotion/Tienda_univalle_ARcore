@@ -43,10 +43,6 @@ class ArVisuals : ComponentActivity() {
                         ARScreen(model = currentModel.value) {
                             finish()
                         }
-                        Menu(
-                            modifier = Modifier.align(Alignment.BottomCenter),
-                            onClick = { currentModel.value = it }
-                        )
                     }
                 }
             }
@@ -70,10 +66,10 @@ fun Menu(modifier: Modifier, onClick: (String) -> Unit) {
         ModelClass("JacketUvallefinal_1111032647", R.drawable.chaquetatrans),
         ModelClass("chaquetaAzulArreglada_1111032527", R.drawable.chaquetauvalle),
         ModelClass("neonpolera_1111032710", R.drawable.polerafosfo),
-        ModelClass("Polo_Shirt_with_Unive_1111032633", R.drawable.polirauvalle),
+        ModelClass("Polo_Shirt_with_Unive_1111032633", R.drawable.poloplomo),
         ModelClass( "Poloverde", R.drawable.poloverde),
         ModelClass("MochilaU", R.drawable.mochilaazul),
-        ModelClass("MochilanoseU", R.drawable.mochilapeqverde)
+        ModelClass("MochilanoseU", R.drawable.mochilabandolera)
     )
     fun updateIndex(offset: Int) {
         currentIndex = (currentIndex + offset + itemsList.size) % itemsList.size
@@ -145,14 +141,14 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
                 .padding(16.dp,5.dp,16.dp,5.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly, // Espaciado uniforme
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ){
             // Botón para volver al Activity anterior
             Button(
                 onClick = onBack,
                 modifier = Modifier
-                    .padding(16.dp,5.dp,16.dp,5.dp),
+                    .padding(5.dp,5.dp,16.dp,5.dp),
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color(183, 21, 54, 255),
                     contentColor = Color.White
@@ -160,6 +156,17 @@ fun ARScreen(model: String, onBack: () -> Unit) {
             ) {
                 Text("Volver")
             }
+
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomCenter)
+                .padding(16.dp,5.dp,16.dp,5.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly, // Espaciado uniforme
+            verticalAlignment = Alignment.CenterVertically
+        ){
             // Botón para colocar el objeto
             if (placeModelButton.value) {
                 Button(
@@ -177,11 +184,12 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 }
             }
         }
+
         // Slider para ajustar la escala del modelo
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 120.dp),
+                .padding(bottom = 60.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Escala del modelo: ${String.format("%.1f", scale)}",
