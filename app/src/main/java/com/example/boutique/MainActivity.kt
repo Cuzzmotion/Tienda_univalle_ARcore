@@ -140,7 +140,7 @@ fun LoginScreen(navController: NavController) {
         )
 
         if (errorMessage.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp).testTag("messageError").semantics {
+            Spacer(modifier = Modifier.height(8.dp).testTag("messageLoginError").semantics {
                 contentDescription = "Espacio para mostrar mensaje de error"
             })
             Text(
@@ -247,7 +247,9 @@ fun HomeScreen(navController: NavController) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = 8.dp)
+                .testTag("inputBuscador")
+                .semantics { contentDescription = "Buscador" },
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (isSearching) {
@@ -278,10 +280,10 @@ fun HomeScreen(navController: NavController) {
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(16.dp))
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().testTag("containerBotonesNavegacion")
+                .semantics { contentDescription = "Contenedor Botontes de Navegacion de Imagenes" },
             horizontalArrangement = Arrangement.Center
         ) {
             listOf("Popular", "Nuevo", "Recomendado").forEach { option ->
@@ -321,6 +323,8 @@ fun HomeScreen(navController: NavController) {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(8.dp)
+                    .testTag("resultadosBusqueda")
+                    .semantics { contentDescription = "Resultados de Busqueda" }
             ) {
                 // Si hay productos, muestra la lista
                 items(filteredProducts) { product ->
@@ -373,6 +377,8 @@ fun HomeScreen(navController: NavController) {
                                     .size(80.dp)
                                     .padding(4.dp)
                                     .background(Color.White, MaterialTheme.shapes.small)
+                                    .testTag("ImgDecodificada")
+                                    .semantics { contentDescription = "ImagenDecodificada" }
                             )
                         } ?: run {
                             Text("Imagen...")
@@ -535,8 +541,12 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
         Spacer(modifier = Modifier.height(16.dp))
 
         // Nombre del producto y categoría
-        Text(text = productWithImg?.product?.name ?: "Nombre del Producto", style = MaterialTheme.typography.titleLarge)
-        Text(text = "Prenda", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+        Text(modifier = Modifier.testTag("productName").semantics {
+            contentDescription = "Nombre del producto"
+        },text = productWithImg?.product?.name ?: "Nombre del Producto", style = MaterialTheme.typography.titleLarge)
+        Text(modifier = Modifier.testTag("category").semantics {
+            contentDescription = "Categoria del producto"
+        },text = "Prenda", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -555,6 +565,8 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
                         .height(40.dp)
+                        .testTag("btnTalla")
+                        .semantics { contentDescription = "Boton Talla" }
                 ) {
                     Text(size)
                 }
@@ -562,9 +574,13 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
         }
         Spacer(modifier = Modifier.height(30.dp))
         // Precio
-        Text(text = "Precio", style = MaterialTheme.typography.bodyLarge)
+        Text(modifier = Modifier.testTag("txtProductPrice").semantics {
+            contentDescription = "Titulo Precio del producto"
+        },text = "Precio", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = ("Bs." + productWithImg?.product?.unitPrice), style = MaterialTheme.typography.headlineMedium)
+        Text(modifier = Modifier.testTag("productPrice").semantics {
+            contentDescription = "Precio del producto"
+        },text = ("Bs." + productWithImg?.product?.unitPrice), style = MaterialTheme.typography.headlineMedium)
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -590,7 +606,11 @@ fun ProductDetailScreen(navController: NavController, productName: Int?) {
             },
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(16.dp),
+                .padding(16.dp)
+                .testTag("btnVisualizarAR")
+                .semantics {
+                    contentDescription = "Boton de Visualizacion AR"
+                },
             colors = ButtonDefaults.buttonColors(containerColor = Color(183, 21, 54, 255))
         ) {
             Icon(imageVector = Icons.Default.PlayArrow, contentDescription = "Visualizar")

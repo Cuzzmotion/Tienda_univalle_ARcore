@@ -15,8 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
 import com.google.ar.core.Config
 import io.github.sceneview.ar.ARScene
 import io.github.sceneview.ar.node.ArModelNode
@@ -111,7 +117,8 @@ fun ARScreen(model: String, onBack: () -> Unit) {
 
     Box(modifier = Modifier.fillMaxSize()) {
         ARScene(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("ARContainer")
+                .semantics { contentDescription = "Contenedor de AR" },
             nodes = nodes,
             planeRenderer = true,
             onCreate = { arSceneView ->
@@ -148,13 +155,15 @@ fun ARScreen(model: String, onBack: () -> Unit) {
             Button(
                 onClick = onBack,
                 modifier = Modifier
-                    .padding(5.dp,5.dp,16.dp,5.dp),
+                    .padding(5.dp,5.dp,16.dp,5.dp)
+                    .testTag("btnVolver")
+                    .semantics { contentDescription="Boton Volver" },
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color(183, 21, 54, 255),
                     contentColor = Color.White
                 )
             ) {
-                Text("Volver")
+                Text(modifier = Modifier.testTag("txtBtnVolver"), text = "Volver")
             }
 
         }
@@ -174,13 +183,13 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                         modelNode.value?.anchor()
                     },
                     modifier = Modifier
-                        .padding(16.dp),
+                        .padding(16.dp).testTag("btnFijar").semantics { contentDescription ="btnFijarObjeto" },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = Color(183, 21, 54, 255),
                         contentColor = Color.White
                     )
                 ) {
-                    Text(text = "Fijar objeto")
+                    Text(modifier = Modifier.testTag("txtBtnFijar").semantics { contentDescription = "Texto BtnFijarObj" },text = "Fijar objeto")
                 }
             }
         }
@@ -192,7 +201,8 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 .padding(bottom = 60.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Escala del modelo: ${String.format("%.1f", scale)}",
+            Text(modifier = Modifier.testTag("escalaSliderModelo")
+                .semantics { contentDescription = "Escala del Modelo" },text = "Escala del modelo: ${String.format("%.1f", scale)}",
                 color = Color.White
             )
             Slider(
