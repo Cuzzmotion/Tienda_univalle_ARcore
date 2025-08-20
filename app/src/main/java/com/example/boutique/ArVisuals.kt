@@ -46,13 +46,17 @@ class ArVisuals : ComponentActivity() {
                     Box(modifier = Modifier.fillMaxSize()) {
                         val currentModel = remember { mutableStateOf(selectedModel) }
                         println("Current: "+currentModel.value)
-                        ARScreen(model = currentModel.value) {
+                        ARScreen(model = currentModel.value, onModelChange = { newModel ->
+                            currentModel.value = newModel
+                        }) {
                             finish()
                         }
                     }
                 }
             }
         }
+    }
+
     @Composable
     fun BackButton() {
         Button(
@@ -65,33 +69,47 @@ class ArVisuals : ComponentActivity() {
 }
 
 @Composable
-fun Menu(modifier: Modifier, onClick: (String) -> Unit) {
-    var currentIndex by remember { mutableStateOf(0) }
+fun Menu(modifier: Modifier, currentModelName: String, onClick: (String) -> Unit) {
     val itemsList = listOf(
         ModelClass("bolsaArreglada_1111011409", R.drawable.bolsouvalle),
         ModelClass("JacketUvallefinal_1111032647", R.drawable.chaquetatrans),
         ModelClass("chaquetaAzulArreglada_1111032527", R.drawable.chaquetauvalle),
         ModelClass("neonpolera_1111032710", R.drawable.polerafosfo),
         ModelClass("Polo_Shirt_with_Unive_1111032633", R.drawable.poloplomo),
-        ModelClass( "Poloverde", R.drawable.poloverde),
+        ModelClass("Poloverde", R.drawable.poloverde),
         ModelClass("MochilaU", R.drawable.mochilaazul),
         ModelClass("MochilanoseU", R.drawable.mochilabandolera)
     )
+
+    // Encontrar el índice actual basado en el nombre del modelo
+    var currentIndex by remember(currentModelName) {
+        mutableStateOf(itemsList.indexOfFirst { it.name == currentModelName }.takeIf { it >= 0 } ?: 0)
+    }
+
     fun updateIndex(offset: Int) {
         currentIndex = (currentIndex + offset + itemsList.size) % itemsList.size
         onClick(itemsList[currentIndex].name)
     }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         IconButton(onClick = { updateIndex(-1) }) {
-            Icon(painter = painterResource(id = R.drawable.baseline_arrow_back_ios_24), contentDescription = "previous", tint = Color.White)
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_arrow_back_ios_24),
+                contentDescription = "Modelo anterior",
+                tint = Color.White
+            )
         }
         CircularImage(imageId = itemsList[currentIndex].imageId)
         IconButton(onClick = { updateIndex(1) }) {
-            Icon(painter = painterResource(id = R.drawable.baseline_arrow_forward_ios_24), contentDescription = "next", tint = Color.White)
+            Icon(
+                painter = painterResource(id = R.drawable.baseline_arrow_forward_ios_24),
+                contentDescription = "Siguiente modelo",
+                tint = Color.White
+            )
         }
     }
 }
@@ -104,16 +122,22 @@ fun CircularImage(modifier: Modifier = Modifier, imageId: Int) {
             .clip(CircleShape)
             .border(width = 3.dp, color = Color.White, CircleShape)
     ) {
-        Image(painter = painterResource(id = imageId), contentDescription = null, modifier = Modifier.size(120.dp), contentScale = ContentScale.FillBounds)
+        Image(
+            painter = painterResource(id = imageId),
+            contentDescription = null,
+            modifier = Modifier.size(120.dp),
+            contentScale = ContentScale.FillBounds
+        )
     }
 }
 
 @Composable
-fun ARScreen(model: String, onBack: () -> Unit) {
+fun ARScreen(model: String, onModelChange: (String) -> Unit, onBack: () -> Unit) {
     val nodes = remember { mutableListOf<ArNode>() }
     val modelNode = remember { mutableStateOf<ArModelNode?>(null) }
     val placeModelButton = remember { mutableStateOf(false) }
-    var scale by remember { mutableStateOf(0.8f) }  // Tamaño inicial del modelo
+    var scale by remember { mutableStateOf(0.8f) }
+    var showModelSelector by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         ARScene(
@@ -128,7 +152,7 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 modelNode.value = ArModelNode(arSceneView.engine, PlacementMode.INSTANT).apply {
                     loadModelGlbAsync(
                         glbFileLocation = "models/${model}.glb",
-                        scaleToUnits = scale  // Configuración de escala inicial
+                        scaleToUnits = scale
                     )
                     onAnchorChanged = {
                         placeModelButton.value = !isAnchored
@@ -143,21 +167,22 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 planeRenderer.isVisible = false
             }
         )
+
+        // Barra superior con botones
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .padding(16.dp,5.dp,16.dp,5.dp),
-            horizontalArrangement = Arrangement.Start,
+                .padding(16.dp, 5.dp, 16.dp, 5.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
-        ){
-            // Botón para volver al Activity anterior
+        ) {
+            // Botón para volver
             Button(
                 onClick = onBack,
                 modifier = Modifier
-                    .padding(5.dp,5.dp,16.dp,5.dp)
                     .testTag("btnVolver")
-                    .semantics { contentDescription="Boton Volver" },
+                    .semantics { contentDescription = "Botón Volver" },
                 colors = ButtonDefaults.buttonColors(
                     backgroundColor = Color(183, 21, 54, 255),
                     contentColor = Color.White
@@ -166,16 +191,55 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 Text(modifier = Modifier.testTag("txtBtnVolver"), text = "Volver")
             }
 
+            // Botón para mostrar/ocultar selector de modelos
+            Button(
+                onClick = { showModelSelector = !showModelSelector },
+                modifier = Modifier
+                    .testTag("btnSelector")
+                    .semantics { contentDescription = "Botón Selector de Modelos" },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(183, 21, 54, 255),
+                    contentColor = Color.White
+                )
+            ) {
+                Text(
+                    modifier = Modifier.testTag("txtBtnSelector"),
+                    text = if (showModelSelector) "Ocultar" else "Modelos"
+                )
+            }
         }
 
+        // Selector de modelos (se muestra/oculta según showModelSelector)
+        if (showModelSelector) {
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 70.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                backgroundColor = Color.Black.copy(alpha = 0.7f),
+                elevation = 8.dp
+            ) {
+                Menu(
+                    modifier = Modifier.padding(16.dp),
+                    currentModelName = model,
+                    onClick = { newModel ->
+                        onModelChange(newModel)
+                        showModelSelector = false // Ocultar selector después de seleccionar
+                    }
+                )
+            }
+        }
+
+        // Botones inferiores
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.BottomCenter)
-                .padding(16.dp,5.dp,16.dp,5.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly, // Espaciado uniforme
+                .padding(16.dp, 5.dp, 16.dp, 5.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
-        ){
+        ) {
             // Botón para colocar el objeto
             if (placeModelButton.value) {
                 Button(
@@ -183,13 +247,20 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                         modelNode.value?.anchor()
                     },
                     modifier = Modifier
-                        .padding(16.dp).testTag("btnFijar").semantics { contentDescription ="btnFijarObjeto" },
+                        .padding(16.dp)
+                        .testTag("btnFijar")
+                        .semantics { contentDescription = "btnFijarObjeto" },
                     colors = ButtonDefaults.buttonColors(
                         backgroundColor = Color(183, 21, 54, 255),
                         contentColor = Color.White
                     )
                 ) {
-                    Text(modifier = Modifier.testTag("txtBtnFijar").semantics { contentDescription = "Texto BtnFijarObj" },text = "Fijar objeto")
+                    Text(
+                        modifier = Modifier
+                            .testTag("txtBtnFijar")
+                            .semantics { contentDescription = "Texto BtnFijarObj" },
+                        text = "Fijar objeto"
+                    )
                 }
             }
         }
@@ -201,15 +272,18 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                 .padding(bottom = 60.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(modifier = Modifier.testTag("escalaSliderModelo")
-                .semantics { contentDescription = "Escala del Modelo" },text = "Escala del modelo: ${String.format("%.1f", scale)}",
+            Text(
+                modifier = Modifier
+                    .testTag("escalaSliderModelo")
+                    .semantics { contentDescription = "Escala del Modelo" },
+                text = "Escala del modelo: ${String.format("%.1f", scale)}",
                 color = Color.White
             )
             Slider(
                 value = scale,
                 onValueChange = { newScale ->
-                    scale = newScale.coerceIn(0.5f, 2.0f)  // Límite entre 0.5 y 2.0
-                    modelNode.value?.scale = Float3(scale, scale, scale) // Ajuste de tipo Float3
+                    scale = newScale.coerceIn(0.5f, 2.0f)
+                    modelNode.value?.scale = Float3(scale, scale, scale)
                 },
                 valueRange = 0.5f..2.0f,
                 modifier = Modifier.padding(horizontal = 32.dp),
@@ -221,18 +295,17 @@ fun ARScreen(model: String, onBack: () -> Unit) {
                     inactiveTickColor = Color.Transparent
                 )
             )
-
         }
     }
 
+    // Efecto para cargar nuevo modelo cuando cambia
     LaunchedEffect(key1 = model) {
         modelNode.value?.loadModelGlbAsync(
             glbFileLocation = "models/${model}.glb",
             scaleToUnits = scale
         )
-        Log.e("errorloading", "ERROR LOADING MODEL")
+        Log.d("ModelChange", "Cargando modelo: $model")
     }
 }
 
 data class ModelClass(var name: String, var imageId: Int)
-}
